@@ -20,6 +20,7 @@ export default function AddTask(props: { projectId?: string }) {
     data: projects,
     isLoading,
     revalidate,
+    error,
   } = useCachedPromise(
     async () => {
       const toast = await showToast({ style: Toast.Style.Animated, title: "Loading projects…" });
@@ -120,6 +121,9 @@ export default function AddTask(props: { projectId?: string }) {
         </ActionPanel>
       }
     >
+      {/* Without this the picker just sits empty, which reads as "no projects"
+          rather than "Todocky never answered". */}
+      {error ? <Form.Description title="Todocky" text={`Could not load projects. ${error.message}`} /> : null}
       <Form.Dropdown id="projectId" title="Project" value={projectId ?? ""} onChange={setProjectId}>
         {projects.map((project) => (
           <Form.Dropdown.Item

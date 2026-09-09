@@ -9,6 +9,7 @@ export default function Projects() {
     data: projects,
     isLoading,
     revalidate,
+    error,
   } = useCachedPromise(loadProjects, [], {
     initialData: [],
     keepPreviousData: true,
@@ -17,10 +18,18 @@ export default function Projects() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search projects">
+      {/* An unreachable Todocky must not read as "you have no projects" — say
+          which of the two it is, right where the list would have been. */}
       <List.EmptyView
-        icon={Icon.Tray}
-        title={isLoading ? "Loading projects…" : "No projects yet"}
-        description={isLoading ? undefined : "Create one in Todocky, then reload here."}
+        icon={error ? Icon.ExclamationMark : Icon.Tray}
+        title={error ? "Could not reach Todocky" : isLoading ? "Loading projects…" : "No projects yet"}
+        description={error ? error.message : isLoading ? undefined : "Create one in Todocky, then reload here."}
+        actions={
+          <ActionPanel>
+            <Action icon={Icon.ArrowClockwise} title="Try Again" onAction={revalidate} />
+            <Action icon={Icon.AppWindow} title="Open Todocky" onAction={openTodocky} />
+          </ActionPanel>
+        }
       />
       {projects.map((project) => (
         <List.Item

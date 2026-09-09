@@ -43,3 +43,10 @@ npm run dev     # loads the extension into Raycast with live reload
 npm run lint
 npm run build
 ```
+
+## Requires
+
+Todocky with the case-insensitive HTTP header fix in its embedded MCP server.
+Builds before that fix drop the request body of any client that lowercases header
+names — which Node, and therefore every Raycast extension, always does — and answer
+`Parse error: Invalid JSON: Empty request body`.
