@@ -1,6 +1,6 @@
 import { Action, ActionPanel, Icon, List, Toast, showToast, Keyboard } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { Project, listProjects, listTasks } from "./todocky";
+import { Project, TaskSummary, listProjects, listTasks } from "./todocky";
 import { openTodocky, reportError } from "./feedback";
 import AddTask from "./add-task";
 
@@ -77,7 +77,7 @@ function ProjectTasks({ project }: { project: Project }) {
 
   const open = tasks.filter((task) => !task.is_completed);
   const done = tasks.filter((task) => task.is_completed);
-  const actions = <TaskActions project={project} onChanged={revalidate} />;
+  const newTaskActions = <TaskActions project={project} onChanged={revalidate} />;
 
   return (
     <List isLoading={isLoading} navigationTitle={project.name} searchBarPlaceholder={`Search in ${project.name}`}>
@@ -85,25 +85,39 @@ function ProjectTasks({ project }: { project: Project }) {
         icon={error ? Icon.ExclamationMark : Icon.CheckCircle}
         title={error ? "Could not reach Todocky" : isLoading ? "Loading tasks…" : "Nothing here yet"}
         description={error ? error.message : isLoading ? undefined : "Press ⌘N to add the first one."}
-        actions={actions}
+        actions={newTaskActions}
       />
       <List.Section title="Open" subtitle={open.length > 0 ? String(open.length) : undefined}>
         {open.map((task) => (
-          <List.Item key={task.id} icon={Icon.Circle} title={task.name} actions={actions} />
+          <List.Item
+            key={task.id}
+            icon={Icon.Circle}
+            title={task.name}
+            actions={<TaskActions project={project} task={task} onChanged={revalidate} />}
+          />
         ))}
       </List.Section>
       <List.Section title="Completed" subtitle={done.length > 0 ? String(done.length) : undefined}>
         {done.map((task) => (
-          <List.Item key={task.id} icon={Icon.CheckCircle} title={task.name} actions={actions} />
+          <List.Item
+            key={task.id}
+            icon={Icon.CheckCircle}
+            title={task.name}
+            actions={<TaskActions project={project} task={task} onChanged={revalidate} />}
+          />
         ))}
       </List.Section>
     </List>
   );
 }
 
-function TaskActions({ project, onChanged }: { project: Project; onChanged: () => void }) {
+function TaskActions({ project, task, onChanged }: { project: Project; task?: TaskSummary; onChanged: () => void }) {
   return (
     <ActionPanel>
+      {/* Enter hands the task to the app itself, which opens its card. Todocky
+          only honours this for a task the active workspace can actually reach,
+          so a stale row here just brings the app forward. */}
+      {task ? <Action.Open icon={Icon.AppWindow} title="Open in Todocky" target={`todocky://task/${task.id}`} /> : null}
       <Action.Push
         icon={Icon.PlusCircle}
         title="New Task"

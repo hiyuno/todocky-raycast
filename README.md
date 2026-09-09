@@ -25,7 +25,7 @@ preferences. That traffic is unencrypted, so only do it on a network you trust.
 |---|---|
 | **Add Task** | Form with a project picker, task name and notes. Keeps the project selected after submitting, so you can capture several tasks in a row. |
 | **Quick Add Task** | Type the task straight into the Raycast bar. Files it into the project named in preferences, otherwise the last one you used, otherwise Inbox. |
-| **Search Projects** | Browse projects, look at their tasks, and add a task to any of them. |
+| **Search Projects** | Browse projects, open one to see its tasks, and press Enter on a task to open its card in Todocky. ⌘N creates a task wherever you are. |
 
 ## Preferences
 
@@ -46,7 +46,9 @@ npm run build
 
 ## Requires
 
-Todocky with the case-insensitive HTTP header fix in its embedded MCP server.
+Todocky with the `todocky://` URL scheme and the case-insensitive HTTP header fix
+in its embedded MCP server.
 Builds before that fix drop the request body of any client that lowercases header
 names — which Node, and therefore every Raycast extension, always does — and answer
-`Parse error: Invalid JSON: Empty request body`.
+`Parse error: Invalid JSON: Empty request body`. Builds without the URL scheme
+still work, except that **Open in Todocky** on a task does nothing.
