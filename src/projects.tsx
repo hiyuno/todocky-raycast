@@ -38,8 +38,16 @@ export default function Projects() {
           title={project.name}
           actions={
             <ActionPanel>
-              <Action.Push icon={Icon.PlusCircle} title="Add Task Here" target={<AddTask projectId={project.id} />} />
-              <Action.Push icon={Icon.List} title="Show Tasks" target={<ProjectTasks project={project} />} />
+              {/* Enter opens the project, the way Enter drills in everywhere else
+                  in Raycast; creating gets Cmd+N, the way it does everywhere else
+                  on the Mac. */}
+              <Action.Push icon={Icon.List} title="Open Project" target={<ProjectTasks project={project} />} />
+              <Action.Push
+                icon={Icon.PlusCircle}
+                title="New Task Here"
+                shortcut={Keyboard.Shortcut.Common.New}
+                target={<AddTask projectId={project.id} />}
+              />
               <Action
                 icon={Icon.ArrowClockwise}
                 title="Reload Projects"
@@ -56,40 +64,58 @@ export default function Projects() {
 }
 
 function ProjectTasks({ project }: { project: Project }) {
-  const { data: tasks, isLoading } = useCachedPromise((projectId: string) => listTasks(projectId), [project.id], {
+  const {
+    data: tasks,
+    isLoading,
+    revalidate,
+    error,
+  } = useCachedPromise((projectId: string) => listTasks(projectId), [project.id], {
     initialData: [],
+    keepPreviousData: true,
     onError: (error) => reportError(error, "Could not load tasks"),
   });
 
   const open = tasks.filter((task) => !task.is_completed);
   const done = tasks.filter((task) => task.is_completed);
+  const actions = <TaskActions project={project} onChanged={revalidate} />;
 
   return (
     <List isLoading={isLoading} navigationTitle={project.name} searchBarPlaceholder={`Search in ${project.name}`}>
-      <List.EmptyView icon={Icon.CheckCircle} title={isLoading ? "Loading tasks…" : "Nothing here yet"} />
+      <List.EmptyView
+        icon={error ? Icon.ExclamationMark : Icon.CheckCircle}
+        title={error ? "Could not reach Todocky" : isLoading ? "Loading tasks…" : "Nothing here yet"}
+        description={error ? error.message : isLoading ? undefined : "Press ⌘N to add the first one."}
+        actions={actions}
+      />
       <List.Section title="Open" subtitle={open.length > 0 ? String(open.length) : undefined}>
         {open.map((task) => (
-          <List.Item key={task.id} icon={Icon.Circle} title={task.name} actions={<TaskActions project={project} />} />
+          <List.Item key={task.id} icon={Icon.Circle} title={task.name} actions={actions} />
         ))}
       </List.Section>
       <List.Section title="Completed" subtitle={done.length > 0 ? String(done.length) : undefined}>
         {done.map((task) => (
-          <List.Item
-            key={task.id}
-            icon={Icon.CheckCircle}
-            title={task.name}
-            actions={<TaskActions project={project} />}
-          />
+          <List.Item key={task.id} icon={Icon.CheckCircle} title={task.name} actions={actions} />
         ))}
       </List.Section>
     </List>
   );
 }
 
-function TaskActions({ project }: { project: Project }) {
+function TaskActions({ project, onChanged }: { project: Project; onChanged: () => void }) {
   return (
     <ActionPanel>
-      <Action.Push icon={Icon.PlusCircle} title="Add Task Here" target={<AddTask projectId={project.id} />} />
+      <Action.Push
+        icon={Icon.PlusCircle}
+        title="New Task"
+        shortcut={Keyboard.Shortcut.Common.New}
+        target={<AddTask projectId={project.id} onCreated={onChanged} />}
+      />
+      <Action
+        icon={Icon.ArrowClockwise}
+        title="Reload Tasks"
+        shortcut={Keyboard.Shortcut.Common.Refresh}
+        onAction={onChanged}
+      />
       <Action icon={Icon.AppWindow} title="Open Todocky" onAction={openTodocky} />
     </ActionPanel>
   );

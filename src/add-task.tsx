@@ -1,4 +1,15 @@
-import { Action, ActionPanel, Form, Icon, LocalStorage, Toast, showToast, Keyboard } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  Icon,
+  Keyboard,
+  LocalStorage,
+  Toast,
+  popToRoot,
+  showHUD,
+  showToast,
+} from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { useEffect, useRef, useState } from "react";
 import { LAST_PROJECT_KEY, createTask, listProjects, preferences } from "./todocky";
@@ -10,7 +21,7 @@ interface FormValues {
   description: string;
 }
 
-export default function AddTask(props: { projectId?: string }) {
+export default function AddTask(props: { projectId?: string; onCreated?: () => void }) {
   const titleField = useRef<Form.TextField>(null);
   const [projectId, setProjectId] = useState<string | undefined>(props.projectId);
   const [titleError, setTitleError] = useState<string>();
@@ -78,20 +89,12 @@ export default function AddTask(props: { projectId?: string }) {
       });
       await LocalStorage.setItem(LAST_PROJECT_KEY, project.id);
 
-      toast.style = Toast.Style.Success;
-      toast.title = `Added to ${project.name}`;
-      toast.message = title;
-      toast.primaryAction = {
-        title: "Open Todocky",
-        shortcut: { modifiers: ["cmd", "shift"], key: "o" },
-        onAction: openTodocky,
-      };
-
-      // Stay on the form with the project intact: capturing several tasks in a
-      // row is the reason to reach for this command in the first place.
-      titleField.current?.reset();
-      setTitleError(undefined);
-      titleField.current?.focus();
+      // Get out of the way once the task is filed. Leaving the form up read as
+      // "nothing happened", so confirm in a HUD — which closes Raycast on its
+      // own — and reset the navigation for the next launch.
+      await toast.hide();
+      await showHUD(`Added to ${project.name}`);
+      await popToRoot({ clearSearchBar: true });
     } catch (error) {
       await toast.hide();
       await reportError(error, "Could not add the task");
